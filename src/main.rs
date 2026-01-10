@@ -4,8 +4,8 @@ use warp::Filter;
 fn header(page_title: &str) -> Markup {
     html! {
         (DOCTYPE)
-        meta charset="utf-8"
-        title { (page_title)}
+        meta charset="utf-8";
+        title { (page_title) }
     }
 }
 
