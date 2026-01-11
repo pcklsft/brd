@@ -1,7 +1,18 @@
 # brd
 A simple imageboard site that supports private walled-garden communication
 
-## Building & running
+## Setup
+Install sqlx-cli if you haven't already
+`cargo install sqlx-cli --no-default-features --features native-tls,postgres`
+Declare the database URL (you can add this to a .env file at the working directory)
+`export DATABASE_URL="postgres://<your postgres user>:<your password>@localhost/brd"`
+Create the database
+`sqlx db create`
+Run sql migrations
+`sqlx migrate run`
+
+I had to learn how to set up a postgres thing for this and it was actual hell.
+## Usage
 `cargo run`
 
 ## Notes on configurability

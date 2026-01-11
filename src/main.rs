@@ -1,4 +1,5 @@
 use maud::{DOCTYPE, Markup, html};
+use sqlx::postgres::PgPoolOptions;
 use warp::Filter;
 
 fn header(page_title: &str) -> Markup {
@@ -17,7 +18,22 @@ fn page(title: &str) -> Markup {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), sqlx::Error> {
+    // Create a connection pool
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect("postgres://postgres:password@localhost/test");
+
+    // Make a simple query to return the given parameter
+    let row: (i64,) = sqlx::query_as("SELECT $1")
+        .bind(150_i64)
+        .fetch_one(&pool)
+        .await?;
+
+    assert_eq!(row.0, 150);
+
     let index_page = warp::any().map(|| page("brd"));
     warp::serve(index_page).run(([127, 0, 0, 1], 8000)).await;
+
+    Ok(())
 }
