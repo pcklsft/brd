@@ -1,5 +1,6 @@
 use maud::{DOCTYPE, Markup, html};
 use sqlx::postgres::PgPoolOptions;
+use std::env;
 use warp::Filter;
 
 fn header(page_title: &str) -> Markup {
@@ -18,11 +19,15 @@ fn page(title: &str) -> Markup {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), sqlx::Error> {
+async fn main() -> anyhow::Result<()> {
+    // Load env variables from .env
+    dotenvy::dotenv()?;
+
     // Create a connection pool
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect("postgres://postgres:password@localhost/test");
+        .connect(&env::var("DATABASE_URL")?)
+        .await?;
 
     // Make a simple query to return the given parameter
     let row: (i64,) = sqlx::query_as("SELECT $1")
