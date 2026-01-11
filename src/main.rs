@@ -67,9 +67,9 @@ async fn main() -> anyhow::Result<()> {
 
     #[rustfmt::skip]
     let routes = warp::get().and(
-        index
+        index_route
             .or(board_route)
-            .or(user_reoute)
+            .or(user_route)
             .or(static_assets_route)
     );
 
