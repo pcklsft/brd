@@ -1,5 +1,6 @@
 use maud::{DOCTYPE, Markup, html};
 use sqlx::postgres::PgPoolOptions;
+use sqlx::query_file;
 use std::env;
 use warp::Filter;
 
@@ -32,6 +33,21 @@ fn index_page() -> Markup {
     }
 }
 
+// This doesnt need to be in a function
+// but I'd like to try since we'll probably
+// need to put stuff like this in functions later
+async fn get_boards(conn: &sqlx::Pool<sqlx::Postgres>) -> anyhow::Result<()> {
+    let rows = sqlx::query("SELECT * FROM boards ORDER BY name")
+        .fetch_all(conn)
+        .await?;
+
+    for row in rows {
+        print!("{:#?}", row);
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Load env variables from .env
@@ -42,6 +58,10 @@ async fn main() -> anyhow::Result<()> {
         .max_connections(5)
         .connect(&env::var("DATABASE_URL")?)
         .await?;
+
+    query_file!("queries/seed_data.sql").execute(&pool).await?;
+
+    get_boards(&pool).await?;
 
     // Make a simple query to return the given parameter
     let row: (i64,) = sqlx::query_as("SELECT $1")
