@@ -18,6 +18,17 @@ fn page(title: &str) -> Markup {
     }
 }
 
+fn index_page() -> Markup {
+    html! {
+        (page("brd"))
+        p { "welcome to brd" }
+        h2 { "boards" }
+        a href="/b/g" { "g" }
+        h2 { "description" }
+        p { "A simple imageboard site that supports private walled-garden communication" }
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Load env variables from .env
@@ -37,13 +48,17 @@ async fn main() -> anyhow::Result<()> {
 
     assert_eq!(row.0, 150);
 
-    let index_page = warp::path::end().map(|| page("brd"));
+    let index = warp::path::end().map(|| index_page());
 
     let board_page = warp::path("b")
         .and(warp::path::param())
         .map(|param: String| page(&param));
 
-    let routes = warp::get().and(index_page.or(board_page));
+    let user_page = warp::path("u")
+        .and(warp::path::param())
+        .map(|param: String| page(&format!("user {}", param)));
+
+    let routes = warp::get().and(index.or(board_page).or(user_page));
 
     warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
 
