@@ -51,26 +51,26 @@ async fn main() -> anyhow::Result<()> {
 
     assert_eq!(row.0, 150);
 
-    let index = warp::path::end().map(|| index_page());
+    let index_route = warp::path::end().map(|| index_page());
 
-    let board_page = warp::path("b")
+    let board_route = warp::path("b")
         .and(warp::path::param())
         .map(|param: String| page(&param));
 
-    let user_page = warp::path("u")
+    let user_route = warp::path("u")
         .and(warp::path::param())
         .map(|param: String| page(&format!("user {}", param)));
 
     #[rustfmt::skip]
-    let static_assets = warp::path("assets")
+    let static_assets_route = warp::path("assets")
         .and(warp::fs::dir("assets"));
 
     #[rustfmt::skip]
     let routes = warp::get().and(
         index
-            .or(board_page)
-            .or(user_page)
-            .or(static_assets)
+            .or(board_route)
+            .or(user_reoute)
+            .or(static_assets_route)
     );
 
     warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
