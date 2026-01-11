@@ -61,9 +61,17 @@ async fn main() -> anyhow::Result<()> {
         .and(warp::path::param())
         .map(|param: String| page(&format!("user {}", param)));
 
-    let static_assets = warp::path("assets").and(warp::fs::dir("assets"));
+    #[rustfmt::skip]
+    let static_assets = warp::path("assets")
+        .and(warp::fs::dir("assets"));
 
-    let routes = warp::get().and(index.or(board_page).or(user_page).or(static_assets));
+    #[rustfmt::skip]
+    let routes = warp::get().and(
+        index
+            .or(board_page)
+            .or(user_page)
+            .or(static_assets)
+    );
 
     warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
 
