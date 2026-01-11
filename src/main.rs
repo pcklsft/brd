@@ -37,8 +37,15 @@ async fn main() -> anyhow::Result<()> {
 
     assert_eq!(row.0, 150);
 
-    let index_page = warp::any().map(|| page("brd"));
-    warp::serve(index_page).run(([127, 0, 0, 1], 8000)).await;
+    let index_page = warp::path::end().map(|| page("brd"));
+
+    let board_page = warp::path("b")
+        .and(warp::path::param())
+        .map(|param: String| page(&param));
+
+    let routes = warp::get().and(index_page.or(board_page));
+
+    warp::serve(routes).run(([127, 0, 0, 1], 8000)).await;
 
     Ok(())
 }
