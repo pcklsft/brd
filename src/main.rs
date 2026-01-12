@@ -30,7 +30,7 @@ mod filters {
     pub fn api(
         pool: Pool<Postgres>,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        boards_list(pool).or(user_get())
+        boards_list(pool).or(user_get()).or(board_get())
     }
 
     pub fn boards_list(
@@ -47,6 +47,13 @@ mod filters {
         warp::path("u")
             .and(warp::path::param())
             .map(|param: String| page(&format!("user {}", param)))
+    }
+
+    pub fn board_get() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
+    {
+        warp::path("b")
+            .and(warp::path::param())
+            .map(|param: String| page(&param))
     }
 }
 
