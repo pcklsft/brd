@@ -175,7 +175,6 @@ mod views {
     }
 
     pub fn posts_partial(posts: Vec<Post>) -> Markup {
-        println!("{:#?}", posts);
         html! {
             @for post in posts {
                 pre {
