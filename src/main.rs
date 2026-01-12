@@ -1,8 +1,42 @@
 use maud::{DOCTYPE, Markup, html};
-use sqlx::postgres::PgPoolOptions;
+use sqlx::postgres::{PgPoolOptions, PgRow};
+use sqlx::prelude::FromRow;
 use sqlx::{Error, query_file};
+use std::convert::Infallible;
 use std::env;
+use std::fmt::Display;
 use warp::Filter;
+
+#[derive(FromRow)]
+struct BoardQuery {
+    pub id: i64,
+    pub name: String,
+    pub description: String,
+}
+
+impl Display for BoardQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"
+                id: {},
+                name: {},
+                description: {}
+            "#,
+            self.id, self.name, self.description
+        )
+    }
+}
+
+// This doesnt need to be in a function
+// but I'd like to try since we'll probably
+// need to put stuff like this in functions later
+async fn get_boards(conn: &sqlx::Pool<sqlx::Postgres>) -> Result<Vec<BoardQuery>, Error> {
+    let rows = sqlx::query_as!(BoardQuery, "SELECT * FROM boards ORDER BY name")
+        .fetch_all(conn)
+        .await?;
+    Ok(rows)
+}
 
 fn header(page_title: &str) -> Markup {
     html! {
@@ -20,30 +54,34 @@ fn page(title: &str) -> Markup {
     }
 }
 
-fn index_page() -> Markup {
-    html! {
+fn boards_partial(boards: Result<Vec<BoardQuery>, Error>) -> Markup {
+    match boards {
+        Ok(boards) => {
+            html! {
+                @for board in boards {
+                    a href="/b/g" { (board) }
+                }
+            }
+        }
+        Err(_) => {
+            html! {
+                p { "No boards found" }
+            }
+        }
+    }
+}
+
+async fn index_page(boards: Markup) -> Result<Markup, Infallible> {
+    Ok(html! {
         (page("brd"))
         p { "welcome to brd" }
 
         h2 { "boards" }
-        a href="/b/g" { "g" }
+        (boards)
 
         h2 { "description" }
         p { "A simple imageboard site that supports private walled-garden communication" }
-    }
-}
-
-// This doesnt need to be in a function
-// but I'd like to try since we'll probably
-// need to put stuff like this in functions later
-async fn get_boards(conn: &sqlx::Pool<sqlx::Postgres>) -> Result<(), Error> {
-    let rows = sqlx::query("SELECT * FROM boards ORDER BY name")
-        .fetch_all(conn)
-        .await?;
-
-    println!("{rows:#?}");
-
-    Ok(())
+    })
 }
 
 #[tokio::main]
@@ -59,8 +97,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     query_file!("queries/seed_data.sql").execute(&pool).await?;
 
-    get_boards(&pool).await?;
-
     // Make a simple query to return the given parameter
     let row: (i64,) = sqlx::query_as("SELECT $1")
         .bind(150_i64)
@@ -69,7 +105,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(row.0, 150);
 
-    let index_route = warp::path::end().map(|| index_page());
+    let index_route =
+        warp::path::end().and_then(async || index_page(boards_partial(get_boards(&pool).await)));
 
     let board_route = warp::path("b")
         .and(warp::path::param())
