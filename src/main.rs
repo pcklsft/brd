@@ -189,6 +189,7 @@ mod views {
     pub fn board_page(board: Markup, posts: Markup) -> Markup {
         html! {
             (board)
+            a href="/" { "<= Go back" }
             (posts)
         }
     }
