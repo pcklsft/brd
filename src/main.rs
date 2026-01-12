@@ -1,7 +1,7 @@
 use maud::{DOCTYPE, Markup, html};
 use sqlx::postgres::{PgPoolOptions, PgRow};
 use sqlx::prelude::FromRow;
-use sqlx::{Error, query_file};
+use sqlx::{Error, Pool, Postgres, query_file};
 use std::convert::Infallible;
 use std::env;
 use std::fmt::Display;
@@ -84,6 +84,17 @@ async fn index_page(boards: Markup) -> Result<Markup, Infallible> {
     })
 }
 
+fn with_pool(
+    pool: Pool<Postgres>,
+) -> impl Filter<Extract = (Pool<Postgres>,), Error = std::convert::Infallible> + Clone {
+    warp::any().map(move || pool.clone())
+}
+
+// TODO: potentially put this in a handler module
+async fn index(pool: Pool<Postgres>) -> Result<impl warp::Reply, Infallible> {
+    index_page(boards_partial(get_boards(&pool).await)).await
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load env variables from .env
@@ -105,8 +116,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     assert_eq!(row.0, 150);
 
-    let index_route =
-        warp::path::end().and_then(async || index_page(boards_partial(get_boards(&pool).await)));
+    let index_route = warp::path::end()
+        .and(with_pool(pool.clone()))
+        .and_then(index);
 
     let board_route = warp::path("b")
         .and(warp::path::param())
