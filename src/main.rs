@@ -1,4 +1,5 @@
 use sqlx::postgres::PgPoolOptions;
+use sqlx::query_file;
 use std::env;
 
 #[tokio::main]
@@ -11,6 +12,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .max_connections(5)
         .connect(&env::var("DATABASE_URL")?)
         .await?;
+
+    query_file!("queries/seed_data.sql").execute(&pool).await?;
 
     let api = filters::api(pool);
 
@@ -30,9 +33,9 @@ mod filters {
     pub fn api(
         pool: Pool<Postgres>,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        boards_get(pool)
+        boards_get(pool.clone())
             .or(user_get())
-            .or(board_get())
+            .or(board_get(pool))
             .or(static_assets())
     }
 
@@ -52,11 +55,12 @@ mod filters {
             .map(|param: String| page(&format!("user {}", param)))
     }
 
-    pub fn board_get() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
-    {
-        warp::path("b")
-            .and(warp::path::param())
-            .map(|param: String| page(&param))
+    pub fn board_get(
+        pool: Pool<Postgres>,
+    ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+        warp::path!("b" / String)
+            .and(with_pool(pool))
+            .and_then(handlers::board)
     }
 
     pub fn static_assets()
@@ -66,13 +70,41 @@ mod filters {
 }
 
 mod handlers {
-    use super::db::boards_get;
-    use super::views::{boards_partial, index_page};
+    use super::db::{board_get, boards_get, threads_get};
+    use super::views::{board_page, board_partial, boards_partial, index_page, posts_partial};
+    use maud::html;
     use sqlx::{Pool, Postgres};
     use std::convert::Infallible;
+    use warp::http::StatusCode;
 
     pub async fn index(pool: Pool<Postgres>) -> Result<impl warp::Reply, Infallible> {
-        index_page(boards_partial(boards_get(pool).await))
+        let boards_partial = match boards_get(pool).await {
+            Ok(boards) => boards_partial(boards),
+            Err(_) => html! { p { "No boards found" } },
+        };
+
+        Ok(index_page(boards_partial))
+    }
+
+    pub async fn board(
+        board_name: String,
+        pool: Pool<Postgres>,
+    ) -> Result<impl warp::Reply, Infallible> {
+        let board = match board_get(pool.clone(), &board_name).await {
+            Ok(board) => board,
+            Err(_) => {
+                return Ok(html! { (StatusCode::NOT_FOUND) });
+            }
+        };
+
+        let board_partial = board_partial(&board);
+
+        let threads_partial = match threads_get(pool, &board).await {
+            Ok(threads) => posts_partial(threads),
+            Err(_) => html! { p { "No threads found" } },
+        };
+
+        Ok(board_page(board_partial, threads_partial))
     }
 }
 
@@ -85,12 +117,19 @@ mod models {
         pub name: String,
         pub description: String,
     }
+
+    #[derive(Debug, Deserialize, Serialize, Clone)]
+    pub struct Post {
+        pub id: i64,
+        pub body: String,
+        pub parent: Option<i64>,
+        pub board_id: i64,
+    }
 }
 
 mod views {
-    use super::models::Board;
+    use super::models::{Board, Post};
     use maud::{DOCTYPE, Markup, html};
-    use std::convert::Infallible;
 
     pub fn header(page_title: &str) -> Markup {
         html! {
@@ -108,25 +147,16 @@ mod views {
         }
     }
 
-    pub fn boards_partial(boards: Result<Vec<Board>, sqlx::Error>) -> Markup {
-        match boards {
-            Ok(boards) => {
-                html! {
-                    @for board in boards {
-                        a href="/b/g" { (board.name) }
-                    }
+    pub fn boards_partial(boards: Vec<Board>) -> Markup {
+        html! {
+                @for board in boards {
+                    a href="/b/g" { (board.name) }
                 }
-            }
-            Err(_) => {
-                html! {
-                    p { "No boards found" }
-                }
-            }
         }
     }
 
-    pub fn index_page(boards: Markup) -> Result<Markup, Infallible> {
-        Ok(html! {
+    pub fn index_page(boards: Markup) -> Markup {
+        html! {
             (page("brd"))
             p { "welcome to brd" }
 
@@ -135,12 +165,37 @@ mod views {
 
             h2 { "description" }
             p { "A simple imageboard site that supports private walled-garden communication" }
-        })
+        }
+    }
+
+    pub fn board_partial(board: &Board) -> Markup {
+        html! {
+            (page(&board.name))
+        }
+    }
+
+    pub fn posts_partial(posts: Vec<Post>) -> Markup {
+        println!("{:#?}", posts);
+        html! {
+            @for post in posts {
+                pre {
+                    "id: " (post.id) "\n"
+                    "body: " (post.body) "\n"
+                }
+            }
+        }
+    }
+
+    pub fn board_page(board: Markup, posts: Markup) -> Markup {
+        html! {
+            (board)
+            (posts)
+        }
     }
 }
 
 mod db {
-    use super::models::Board;
+    use super::models::{Board, Post};
     use sqlx::{Pool, Postgres};
     use std::convert::Infallible;
     use warp::Filter;
@@ -155,5 +210,28 @@ mod db {
         sqlx::query_as!(Board, "SELECT * FROM boards ORDER BY name")
             .fetch_all(&pool)
             .await
+    }
+
+    pub async fn board_get(pool: Pool<Postgres>, board_name: &str) -> Result<Board, sqlx::Error> {
+        sqlx::query_as!(Board, "SELECT * FROM boards WHERE name = $1", board_name)
+            .fetch_one(&pool)
+            .await
+    }
+
+    pub async fn threads_get(
+        pool: Pool<Postgres>,
+        board: &Board,
+    ) -> Result<Vec<Post>, sqlx::Error> {
+        sqlx::query_as!(
+            Post,
+            r#"
+            SELECT * FROM posts
+            WHERE board_id = $1 AND parent IS NULL
+            ORDER BY id
+            "#,
+            board.id
+        )
+        .fetch_all(&pool)
+        .await
     }
 }
