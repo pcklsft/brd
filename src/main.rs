@@ -136,7 +136,7 @@ mod views {
             (DOCTYPE)
             meta charset="utf-8";
             title { (page_title) }
-            link rel="stylesheet" href="assets/css/style.css";
+            link rel="stylesheet" href="/assets/css/style.css";
         }
     }
 
