@@ -22,6 +22,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 mod filters {
     use super::db::with_pool;
     use super::handlers;
+    use super::views::page;
     use sqlx::{Pool, Postgres};
     use warp::Filter;
 
@@ -29,7 +30,7 @@ mod filters {
     pub fn api(
         pool: Pool<Postgres>,
     ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
-        boards_list(pool.clone())
+        boards_list(pool).or(user_get())
     }
 
     pub fn boards_list(
@@ -39,6 +40,13 @@ mod filters {
             .and(warp::get())
             .and(with_pool(pool))
             .and_then(handlers::index)
+    }
+
+    pub fn user_get() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
+    {
+        warp::path("u")
+            .and(warp::path::param())
+            .map(|param: String| page(&format!("user {}", param)))
     }
 }
 
