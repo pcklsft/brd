@@ -34,3 +34,18 @@ pub async fn threads_get(pool: Pool<Postgres>, board: &Board) -> Result<Vec<Post
     .fetch_all(&pool)
     .await
 }
+
+pub async fn thread_get(pool: Pool<Postgres>, thread_id: i64) -> Result<Vec<Post>, sqlx::Error> {
+    sqlx::query_as!(
+        Post,
+        r#"
+          SELECT * FROM posts
+          WHERE (id = $1 AND parent IS NULL)
+            OR (parent = $1)
+          ORDER BY id
+        "#,
+        thread_id
+    )
+    .fetch_all(&pool)
+    .await
+}
