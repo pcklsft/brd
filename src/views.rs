@@ -19,9 +19,15 @@ pub fn page(title: &str) -> Markup {
 
 pub fn boards_partial(boards: Vec<Board>) -> Markup {
     html! {
-            @for board in boards {
-                a href="/b/g" { (board.name) }
+            @let most = &boards[..boards.len()-1];
+            @let last = &boards[boards.len()-1];
+
+            @for board in most {
+                a href={ "/b/" (board.name) } { (board.name) }
+                span { " / " }
             }
+
+            a href={ "/b/" (last.name) } { (last.name) }
     }
 }
 
