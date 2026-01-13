@@ -25,6 +25,7 @@ I had to learn how to set up a postgres thing for this and it was actual hell.
 ## Goals
 - The imageboard should be dead simple with as little clutter as possible
 - It should have high configurability, including per-board configurability (for things like max file-size, allowed filetypes, etc)
+- Simple-ish extensibility -> should be moddable and have other packages/features that are toggleable
 
 ## Notes on configurability
 Some users of this software may not want signups enabled (just anonymouse posts), or may want open signups (signups without a key).
