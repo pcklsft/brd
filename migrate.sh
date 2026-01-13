@@ -6,5 +6,5 @@ DATABASE_URL="${DATABASE_URL#\"}"
 
 sqlx migrate run
 
-pg_dump -sOxc --exclude-table="_sqlx_migrations" $DATABASE_URL | awk 'RS="";/CREATE TABLE[^;]*;/' | cat >  queries/schema.sql
+pg_dump -sOxc --exclude-table="_sqlx_migrations" $DATABASE_URL | cat >  queries/schema.sql
 # pg_dump -s $DATABASE_URL | cat
