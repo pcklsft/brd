@@ -35,7 +35,12 @@ Boilerplate
 
 Imageboard
 - Require an image to create a post, with optional text content.
+- Top-level post on thread requires text
 - CRUD threads & posts
+
+Validation
+- All user-submitted content is properly validated
+- Namely, users and threads/posts
 
 Site
 - Homepage (see all boards)
