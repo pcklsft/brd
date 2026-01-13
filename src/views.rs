@@ -62,7 +62,7 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         (page(&board.name))
         a href={ "/b/" (board.name) } { "<= Go back" }
         @for post in posts {
-            p {
+            p id=(post.id) {
                 "id: " (post.id)
                 br;
                 (post.body)
