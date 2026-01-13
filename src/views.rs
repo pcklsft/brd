@@ -42,7 +42,7 @@ pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
     html! {
         @for post in posts {
             pre {
-                a href={ "/b/" (board.name)  "/" (post.id)  "/" } { "id: " (post.id) "\n" }
+                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
                 "body: " (post.body) "\n"
             }
         }
