@@ -44,27 +44,45 @@ pub fn index_page(boards: Markup) -> Markup {
     }
 }
 
-pub fn board_partial(board: &Board) -> Markup {
+pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
     html! {
-        (page(&board.name))
-    }
-}
-
-pub fn posts_partial(posts: Vec<Post>) -> Markup {
-    html! {
-        @for post in posts {
+        @for post in (posts.iter().rev()) {
             pre {
-                "id: " (post.id) "\n"
+                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
                 "body: " (post.body) "\n"
             }
         }
     }
 }
 
-pub fn board_page(board: Markup, posts: Markup) -> Markup {
+pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
     html! {
-        (board)
+        (page(&board.name))
         a href="/" { "<= Go back" }
-        (posts)
+
+        br; br;
+        form method="post" {
+            textarea name="body" rows="6" cols="36" {}
+            br;
+            input name="submit" type="submit" value="submit";
+        }
+        br;
+
+        (threads_partial)
+    }
+}
+
+pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
+    html! {
+        (page(&board.name))
+        a href={ "/b/" (board.name) } { "<= Go back" }
+
+        @for post in posts {
+            p id=(post.id) {
+                "id: " (post.id)
+                br;
+                (post.body)
+            }
+        }
     }
 }
