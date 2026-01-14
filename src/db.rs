@@ -49,3 +49,22 @@ pub async fn thread_get(pool: Pool<Postgres>, thread_id: i64) -> Result<Vec<Post
     .fetch_all(&pool)
     .await
 }
+
+pub async fn thread_post(
+    pool: Pool<Postgres>,
+    board: &Board,
+    body: String,
+) -> Result<i64, sqlx::Error> {
+    sqlx::query!(
+        r#"
+            INSERT INTO posts (body, board_id)
+            VALUES ($1, $2)
+            RETURNING id;
+            "#,
+        body,
+        board.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map(|post| post.id)
+}
