@@ -99,8 +99,8 @@ pub async fn reply_post(
     )
     .await
     {
-        Ok(id) => {
-            let path = format!("/b/{}/{}", board.name, id);
+        Ok(_id) => {
+            let path = format!("/b/{}/{}", board.name, parent);
             let uri = warp::http::Uri::builder()
                 .path_and_query(path)
                 .build()

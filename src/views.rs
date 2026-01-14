@@ -92,7 +92,7 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         // TODO: stop repetition
         @for post in &posts[..] {
             pre id=(post.id) {
-                a href={ "/b/" (board.name)  "/" (first.id) "#" (post.id)} { "id: " (post.id) "\n" }
+                "id: " (post.id) "\n"
                 "body: " (post.body) "\n"
             }
         }
