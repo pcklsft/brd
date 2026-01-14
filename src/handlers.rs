@@ -58,7 +58,7 @@ pub async fn thread_post(
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
     let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
-        return Ok(html! { (StatusCode::NOT_FOUND) });
+        return Ok(warp::reply());
     };
 
     match db::thread_post(
@@ -68,10 +68,15 @@ pub async fn thread_post(
     )
     .await
     {
-        Ok(_id) => Ok(html! { meta http-equiv="refresh" content="0" {} }),
-        Err(e) => {
-            eprintln!("error while posting thread: {e}");
-            Ok(html! { (StatusCode::SERVICE_UNAVAILABLE) })
+        Ok(id) => {
+            let path = format!("/{}/{}", board.name, id);
+            // TODO: MAKE GOOD
+            let uri = warp::http::Uri::builder()
+                .path_and_query(path)
+                .build()
+                .unwrap();
+            Ok(todo!())
         }
+        Err(e) => Ok(warp::reply()),
     }
 }

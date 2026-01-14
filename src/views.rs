@@ -61,7 +61,7 @@ pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
         a href="/" { "<= Go back" }
 
         br; br;
-        form method="post" {
+        form awction="/" method="post" {
             textarea name="body" rows="6" cols="36" {}
             br;
             input name="submit" type="submit" value="submit";
