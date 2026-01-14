@@ -22,6 +22,11 @@ I had to learn how to set up a postgres thing for this and it was actual hell.
 ## Usage
 `cargo run`
 
+## Goals
+- The imageboard should be dead simple with as little clutter as possible
+- It should have high configurability, including per-board configurability (for things like max file-size, allowed filetypes, etc)
+- Simple-ish extensibility -> should be moddable and have other packages/features that are toggleable
+
 ## Notes on configurability
 Some users of this software may not want signups enabled (just anonymouse posts), or may want open signups (signups without a key).
 
@@ -29,19 +34,14 @@ Some users of this software may not want signups enabled (just anonymouse posts)
 Boilerplate
 - sqlx setup
 
-Admin utilities
-- GET boards
-- POST board
-- DELETE board
-- UPDATE board
-
 Imageboard
 - Require an image to create a post, with optional text content.
-- POST post
-- GET posts
-- Users can reply to posts, which are essentially just more posts linked to the original one
-- POST reply
-- GET replies
+- Top-level post on thread requires text
+- CRUD threads & posts
+
+Validation
+- All user-submitted content is properly validated
+- Namely, users and threads/posts
 
 Site
 - Homepage (see all boards)
@@ -51,8 +51,11 @@ Site
 - Users page (see all users)
 
 Users
-- POST user
-- GET users
+- OPTIONAL feature (off by default, only admin users are on by default & cannot be turned off)
 - Signup to create user (with key?)
-- Login to post & view posts
+- Login to post & view posts 
 - Only "admin user" can execute admin api
+
+Admin utilities
+- CRUD boards
+- Moderation tools (for posts & users)
