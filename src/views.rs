@@ -58,6 +58,7 @@ pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
 pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
     html! {
         (page(&board.name))
+        h2 { (&board.description) }
         a href="/" { "<= Go back" }
 
         br; br;
