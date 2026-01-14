@@ -58,7 +58,7 @@ pub async fn thread_post(
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
     let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
-        return Ok(todo!());
+        todo!();
     };
 
     match db::thread_post(
@@ -76,7 +76,7 @@ pub async fn thread_post(
                 .unwrap();
             Ok(warp::redirect(uri))
         }
-        Err(e) => todo!(),
+        Err(_e) => todo!(),
     }
 }
 
@@ -88,7 +88,7 @@ pub async fn reply_post(
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
     let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
-        return Ok(todo!());
+        todo!();
     };
 
     match db::reply_post(
@@ -107,6 +107,6 @@ pub async fn reply_post(
                 .unwrap();
             Ok(warp::redirect(uri))
         }
-        Err(e) => todo!(),
+        Err(_e) => todo!(),
     }
 }
