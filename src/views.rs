@@ -61,6 +61,7 @@ pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
         a href="/" { "<= Go back" }
 
         br; br;
+        p { "Post a thread on this board" }
         form method="post" {
             textarea name="body" rows="6" cols="36" {}
             br;
@@ -74,11 +75,13 @@ pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
 
 pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
     html! {
-        (page(&board.name))
+        @let first = &posts[0];
+        (page(&format!("{} / thread {}", &board.name, first.id)))
         a href={ "/b/" (board.name) } { "<= Go back" }
 
         // TODO: DRY
         br; br;
+        p { "Post a reply to this thread"  }
         form method="post" {
             textarea name="body" rows="6" cols="36" {}
             br;
@@ -87,9 +90,9 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         br;
 
         // TODO: stop repetition
-        @for post in posts {
-            pre {
-                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
+        @for post in &posts[..] {
+            pre id=(post.id) {
+                a href={ "/b/" (board.name)  "/" (first.id) "#" (post.id)} { "id: " (post.id) "\n" }
                 "body: " (post.body) "\n"
             }
         }
