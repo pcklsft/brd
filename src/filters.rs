@@ -39,7 +39,7 @@ pub fn board_get(
         .and(warp::get())
         .and(warp::path::end())
         .and(with_pool(pool))
-        .and_then(handlers::board)
+        .and_then(handlers::board::get)
 }
 
 pub fn thread_get(
@@ -48,7 +48,7 @@ pub fn thread_get(
     warp::path!("b" / String / i64)
         .and(warp::get())
         .and(with_pool(pool))
-        .and_then(handlers::thread_get)
+        .and_then(handlers::post::get)
 }
 
 pub fn thread_post(
@@ -59,7 +59,7 @@ pub fn thread_post(
         .and(warp::body::form())
         .and(warp::body::content_length_limit(1024 * 4))
         .and(with_pool(pool))
-        .and_then(handlers::thread_post)
+        .and_then(handlers::post::create)
 }
 
 // TODO: stop repetition
@@ -71,7 +71,7 @@ pub fn reply_post(
         .and(warp::body::form())
         .and(warp::body::content_length_limit(1024 * 4))
         .and(with_pool(pool))
-        .and_then(handlers::reply_post)
+        .and_then(handlers::post::reply)
 }
 
 pub fn static_assets() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone

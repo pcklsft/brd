@@ -80,7 +80,6 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         (page(&format!("{} / thread {}", &board.name, first.id)))
         a href={ "/b/" (board.name) } { "<= Go back" }
 
-        // TODO: DRY
         br; br;
         p { "Post a reply to this thread"  }
         form method="post" {
