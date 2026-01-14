@@ -46,7 +46,7 @@ pub fn board_partial(board: &Board) -> Markup {
 
 pub fn posts_partial(posts: Vec<Post>) -> Markup {
     html! {
-        @for post in posts {
+        @for post in (posts.iter().rev()) {
             pre {
                 "id: " (post.id) "\n"
                 "body: " (post.body) "\n"
@@ -59,6 +59,15 @@ pub fn board_page(board: Markup, posts: Markup) -> Markup {
     html! {
         (board)
         a href="/" { "<= Go back" }
+
+        br; br;
+        form method="post" {
+            textarea name="body" rows="6" cols="36" {}
+            br;
+            input name="submit" type="submit" value="submit";
+        }
+        br;
+
         (posts)
     }
 }

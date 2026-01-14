@@ -10,7 +10,8 @@ pub fn api(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     boards_get(pool.clone())
         .or(user_get())
-        .or(board_get(pool))
+        .or(board_get(pool.clone()))
+        .or(thread_post(pool))
         .or(static_assets())
 }
 
@@ -33,8 +34,21 @@ pub fn board_get(
     pool: Pool<Postgres>,
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("b" / String)
+        .and(warp::get())
+        .and(warp::path::end())
         .and(with_pool(pool))
         .and_then(handlers::board)
+}
+
+pub fn thread_post(
+    pool: Pool<Postgres>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("b" / String)
+        .and(warp::post())
+        .and(warp::body::form())
+        .and(warp::body::content_length_limit(1024 * 4))
+        .and(with_pool(pool))
+        .and_then(handlers::thread)
 }
 
 pub fn static_assets() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
