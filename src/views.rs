@@ -19,15 +19,15 @@ pub fn page(title: &str) -> Markup {
 
 pub fn boards_partial(boards: Vec<Board>) -> Markup {
     html! {
-            @let most = &boards[..boards.len()-1];
-            @let last = &boards[boards.len()-1];
+        @let most = &boards[..boards.len()-1];
+        @let last = &boards[boards.len()-1];
 
-            @for board in most {
-                a href={ "/b/" (board.name) } { (board.name) }
-                span { " / " }
-            }
+        @for board in most {
+            a href={ "/b/" (board.name) } { (board.name) }
+            span { " / " }
+        }
 
-            a href={ "/b/" (last.name) } { (last.name) }
+        a href={ "/b/" (last.name) } { (last.name) }
     }
 }
 
@@ -61,7 +61,7 @@ pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
         a href="/" { "<= Go back" }
 
         br; br;
-        form awction="/" method="post" {
+        form method="post" {
             textarea name="body" rows="6" cols="36" {}
             br;
             input name="submit" type="submit" value="submit";
@@ -77,11 +77,20 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         (page(&board.name))
         a href={ "/b/" (board.name) } { "<= Go back" }
 
+        // TODO: DRY
+        br; br;
+        form method="post" {
+            textarea name="body" rows="6" cols="36" {}
+            br;
+            input name="submit" type="submit" value="submit";
+        }
+        br;
+
+        // TODO: stop repetition
         @for post in posts {
-            p id=(post.id) {
-                "id: " (post.id)
-                br;
-                (post.body)
+            pre {
+                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
+                "body: " (post.body) "\n"
             }
         }
     }

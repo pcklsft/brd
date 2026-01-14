@@ -58,7 +58,7 @@ pub async fn thread_post(
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
     let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
-        return Ok(warp::reply());
+        return Ok(todo!());
     };
 
     match db::thread_post(
@@ -69,14 +69,44 @@ pub async fn thread_post(
     .await
     {
         Ok(id) => {
-            let path = format!("/{}/{}", board.name, id);
-            // TODO: MAKE GOOD
+            let path = format!("/b/{}/{}", board.name, id);
             let uri = warp::http::Uri::builder()
                 .path_and_query(path)
                 .build()
                 .unwrap();
-            Ok(todo!())
+            Ok(warp::redirect(uri))
         }
-        Err(e) => Ok(warp::reply()),
+        Err(e) => todo!(),
+    }
+}
+
+// TODO: stop repetition
+pub async fn reply_post(
+    board_name: String,
+    parent: i64,
+    data: HashMap<String, String>,
+    pool: Pool<Postgres>,
+) -> Result<impl warp::Reply, Infallible> {
+    let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
+        return Ok(todo!());
+    };
+
+    match db::reply_post(
+        pool,
+        &board,
+        data.get("body").unwrap_or(&String::new()).to_string(),
+        parent,
+    )
+    .await
+    {
+        Ok(id) => {
+            let path = format!("/b/{}/{}", board.name, id);
+            let uri = warp::http::Uri::builder()
+                .path_and_query(path)
+                .build()
+                .unwrap();
+            Ok(warp::redirect(uri))
+        }
+        Err(e) => todo!(),
     }
 }

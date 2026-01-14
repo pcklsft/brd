@@ -68,3 +68,24 @@ pub async fn thread_post(
     .await
     .map(|post| post.id)
 }
+
+pub async fn reply_post(
+    pool: Pool<Postgres>,
+    board: &Board,
+    body: String,
+    parent: i64,
+) -> Result<i64, sqlx::Error> {
+    sqlx::query!(
+        r#"
+            INSERT INTO posts (body, parent, board_id)
+            VALUES ($1, $2, $3)
+            RETURNING id;
+            "#,
+        body,
+        parent,
+        board.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map(|post| post.id)
+}

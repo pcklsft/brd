@@ -12,7 +12,8 @@ pub fn api(
         .or(user_get())
         .or(board_get(pool.clone()))
         .or(thread_get(pool.clone()))
-        .or(thread_post(pool))
+        .or(thread_post(pool.clone()))
+        .or(reply_post(pool))
         .or(static_assets())
 }
 
@@ -59,6 +60,18 @@ pub fn thread_post(
         .and(warp::body::content_length_limit(1024 * 4))
         .and(with_pool(pool))
         .and_then(handlers::thread_post)
+}
+
+// TODO: stop repetition
+pub fn reply_post(
+    pool: Pool<Postgres>,
+) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
+    warp::path!("b" / String / i64)
+        .and(warp::post())
+        .and(warp::body::form())
+        .and(warp::body::content_length_limit(1024 * 4))
+        .and(with_pool(pool))
+        .and_then(handlers::reply_post)
 }
 
 pub fn static_assets() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone
