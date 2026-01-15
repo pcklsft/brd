@@ -55,6 +55,16 @@ pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
     }
 }
 
+pub fn post_form() -> Markup {
+    html! {
+        form method="post" {
+            textarea name="body" rows="6" cols="36" {}
+            br;
+            input name="submit" type="submit" value="submit";
+        }
+    }
+}
+
 pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
     html! {
         (page(&board.name))
@@ -63,11 +73,7 @@ pub fn board_page(board: &Board, threads_partial: Markup) -> Markup {
 
         br; br;
         p { "Post a thread on this board" }
-        form method="post" {
-            textarea name="body" rows="6" cols="36" {}
-            br;
-            input name="submit" type="submit" value="submit";
-        }
+        (post_form())
         br;
 
         (threads_partial)
@@ -82,11 +88,7 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
 
         br; br;
         p { "Post a reply to this thread"  }
-        form method="post" {
-            textarea name="body" rows="6" cols="36" {}
-            br;
-            input name="submit" type="submit" value="submit";
-        }
+        (post_form())
         br;
 
         // TODO: stop repetition
