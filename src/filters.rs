@@ -18,6 +18,8 @@ pub fn api(
         .or(post::reply(pool))
         .or(user::get())
         .or(assets())
+
+    // TODO: handle error recovery / request rejection?
 }
 
 pub fn index(

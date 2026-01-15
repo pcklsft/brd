@@ -28,6 +28,8 @@ pub async fn get(
     Ok(thread_page(&board, thread))
 }
 
+// TODO: IF parent, require an image to be attached
+// always expect an image OR a body
 pub async fn create(
     board_name: String,
     parent: Option<i64>,
@@ -39,7 +41,10 @@ pub async fn create(
         todo!();
     };
 
-    let fields: HashMap<String, String> = data
+    // TODO: inspect this more...
+    // Get text fields
+    // maybe we should have a model for the specific form
+    let fields: HashMap<String, Vec<u8>> = data
         .and_then(|mut field| async move {
             let mut bytes: Vec<u8> = Vec::new();
 
@@ -48,24 +53,26 @@ pub async fn create(
                 let content = content.unwrap();
                 bytes.put(content);
             }
-            Ok((
-                field.name().to_string(),
-                String::from_utf8_lossy(&*bytes).to_string(),
-            ))
+
+            Ok((field.name().to_string(), bytes))
         })
         .try_collect()
         .await
         .unwrap();
 
-    // TODO: Do not allow empty posts
-    if let Ok(id) = db::post_create(
-        pool,
-        &board,
-        parent,
-        fields.get("body").unwrap_or(&String::new()).to_string(),
-    )
-    .await
-    {
+    let Some(file) = fields.get("file") else {
+        // Couldn't get file
+        todo!();
+    };
+
+    let Some(body) = fields.get("body") else {
+        // Couldn't get body
+        todo!();
+    };
+
+    let body = String::from_utf8_lossy(&*body).to_string();
+
+    if let Ok(id) = db::post_create(pool, &board, parent, body, file).await {
         let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
         let uri = warp::http::Uri::builder()
             .path_and_query(path)

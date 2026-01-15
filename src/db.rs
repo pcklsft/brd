@@ -56,31 +56,17 @@ pub async fn post_create(
     parent: Option<i64>,
     body: String,
 ) -> Result<i64, sqlx::Error> {
-    match parent {
-        Some(parent) => sqlx::query!(
-            r#"
+    sqlx::query!(
+        r#"
             INSERT INTO posts (body, parent, board_id)
             VALUES ($1, $2, $3)
             RETURNING id;
             "#,
-            body,
-            parent,
-            board.id
-        )
-        .fetch_one(&pool)
-        .await
-        .map(|post| post.id),
-        None => sqlx::query!(
-            r#"
-            INSERT INTO posts (body, board_id)
-            VALUES ($1, $2)
-            RETURNING id;
-            "#,
-            body,
-            board.id
-        )
-        .fetch_one(&pool)
-        .await
-        .map(|post| post.id),
-    }
+        body,
+        parent,
+        board.id
+    )
+    .fetch_one(&pool)
+    .await
+    .map(|post| post.id)
 }
