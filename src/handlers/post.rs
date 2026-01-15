@@ -2,9 +2,11 @@ use crate::{db, views::thread_page};
 
 use std::{collections::HashMap, convert::Infallible};
 
+use bytes::BufMut;
+use futures_util::TryStreamExt;
 use maud::html;
 use sqlx::{Pool, Postgres};
-use warp::http::StatusCode;
+use warp::{filters::multipart::FormData, http::StatusCode};
 
 pub async fn get(
     board_name: String,
@@ -29,18 +31,38 @@ pub async fn get(
 pub async fn create(
     board_name: String,
     parent: Option<i64>,
-    data: HashMap<String, String>,
+    data: FormData,
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
     let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
+        // No board found
         todo!();
     };
 
+    let fields: HashMap<String, String> = data
+        .and_then(|mut field| async move {
+            let mut bytes: Vec<u8> = Vec::new();
+
+            // field.data() only returns a piece of the content, so we should call it over and over until it's complete
+            while let Some(content) = field.data().await {
+                let content = content.unwrap();
+                bytes.put(content);
+            }
+            Ok((
+                field.name().to_string(),
+                String::from_utf8_lossy(&*bytes).to_string(),
+            ))
+        })
+        .try_collect()
+        .await
+        .unwrap();
+
+    // TODO: Do not allow empty posts
     if let Ok(id) = db::post_create(
         pool,
         &board,
         parent,
-        data.get("body").unwrap_or(&String::new()).to_string(),
+        fields.get("body").unwrap_or(&String::new()).to_string(),
     )
     .await
     {
@@ -51,6 +73,7 @@ pub async fn create(
             .unwrap();
         Ok(warp::redirect(uri))
     } else {
+        // Post not successfully created
         todo!()
     }
 }

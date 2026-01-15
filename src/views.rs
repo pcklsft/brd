@@ -57,8 +57,10 @@ pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
 
 pub fn post_form() -> Markup {
     html! {
-        form method="post" {
+        form method="post" enctype="multipart/form-data" {
             textarea name="body" rows="6" cols="36" {}
+            br;
+            input type="file" name="file";
             br;
             input name="submit" type="submit" value="submit";
         }
