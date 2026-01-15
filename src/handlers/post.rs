@@ -36,7 +36,7 @@ pub async fn create(
         todo!();
     };
 
-    match db::post_create(
+    if let Ok(id) = db::post_create(
         pool,
         &board,
         parent,
@@ -44,14 +44,13 @@ pub async fn create(
     )
     .await
     {
-        Ok(id) => {
-            let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
-            let uri = warp::http::Uri::builder()
-                .path_and_query(path)
-                .build()
-                .unwrap();
-            Ok(warp::redirect(uri))
-        }
-        Err(_e) => todo!(),
+        let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
+        let uri = warp::http::Uri::builder()
+            .path_and_query(path)
+            .build()
+            .unwrap();
+        Ok(warp::redirect(uri))
+    } else {
+        todo!()
     }
 }
