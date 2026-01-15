@@ -13,4 +13,14 @@ pub struct Post {
     pub body: String,
     pub parent: Option<i64>,
     pub board_id: i64,
+    pub file_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct File {
+    pub id: i64,
+    pub file_name: String,
+    pub file_type: String,
+    pub board_id: i64,
+    pub post_id: i64,
 }
