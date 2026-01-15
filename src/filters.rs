@@ -1,4 +1,4 @@
-use crate::db::with_pool;
+use crate::db::{self, with_pool};
 use crate::handlers;
 use crate::views::page;
 use sqlx::{Pool, Postgres};
@@ -59,7 +59,9 @@ pub fn thread_post(
         .and(warp::body::form())
         .and(warp::body::content_length_limit(1024 * 4))
         .and(with_pool(pool))
-        .and_then(handlers::post::create)
+        .and_then(
+            |name, data, pool| async move { handlers::post::create(name, None, data, pool).await },
+        )
 }
 
 // TODO: stop repetition
@@ -71,7 +73,9 @@ pub fn reply_post(
         .and(warp::body::form())
         .and(warp::body::content_length_limit(1024 * 4))
         .and(with_pool(pool))
-        .and_then(handlers::post::reply)
+        .and_then(|name, parent, data, pool| async move {
+            handlers::post::create(name, Some(parent), data, pool).await
+        })
 }
 
 pub fn static_assets() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone

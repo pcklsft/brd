@@ -50,42 +50,37 @@ pub async fn thread_get(pool: Pool<Postgres>, thread_id: i64) -> Result<Vec<Post
     .await
 }
 
-pub async fn thread_post(
+pub async fn post_create(
     pool: Pool<Postgres>,
     board: &Board,
+    parent: Option<i64>,
     body: String,
 ) -> Result<i64, sqlx::Error> {
-    sqlx::query!(
-        r#"
-            INSERT INTO posts (body, board_id)
-            VALUES ($1, $2)
-            RETURNING id;
-            "#,
-        body,
-        board.id
-    )
-    .fetch_one(&pool)
-    .await
-    .map(|post| post.id)
-}
-
-pub async fn reply_post(
-    pool: Pool<Postgres>,
-    board: &Board,
-    body: String,
-    parent: i64,
-) -> Result<i64, sqlx::Error> {
-    sqlx::query!(
-        r#"
+    match parent {
+        Some(parent) => sqlx::query!(
+            r#"
             INSERT INTO posts (body, parent, board_id)
             VALUES ($1, $2, $3)
             RETURNING id;
             "#,
-        body,
-        parent,
-        board.id
-    )
-    .fetch_one(&pool)
-    .await
-    .map(|post| post.id)
+            body,
+            parent,
+            board.id
+        )
+        .fetch_one(&pool)
+        .await
+        .map(|post| post.id),
+        None => sqlx::query!(
+            r#"
+            INSERT INTO posts (body, board_id)
+            VALUES ($1, $2)
+            RETURNING id;
+            "#,
+            body,
+            board.id
+        )
+        .fetch_one(&pool)
+        .await
+        .map(|post| post.id),
+    }
 }

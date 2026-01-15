@@ -28,6 +28,7 @@ pub async fn get(
 
 pub async fn create(
     board_name: String,
+    parent: Option<i64>,
     data: HashMap<String, String>,
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
@@ -35,45 +36,16 @@ pub async fn create(
         todo!();
     };
 
-    match db::thread_post(
+    match db::post_create(
         pool,
         &board,
+        parent,
         data.get("body").unwrap_or(&String::new()).to_string(),
     )
     .await
     {
         Ok(id) => {
-            let path = format!("/b/{}/{}", board.name, id);
-            let uri = warp::http::Uri::builder()
-                .path_and_query(path)
-                .build()
-                .unwrap();
-            Ok(warp::redirect(uri))
-        }
-        Err(_e) => todo!(),
-    }
-}
-
-pub async fn reply(
-    board_name: String,
-    parent: i64,
-    data: HashMap<String, String>,
-    pool: Pool<Postgres>,
-) -> Result<impl warp::Reply, Infallible> {
-    let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
-        todo!();
-    };
-
-    match db::reply_post(
-        pool,
-        &board,
-        data.get("body").unwrap_or(&String::new()).to_string(),
-        parent,
-    )
-    .await
-    {
-        Ok(_id) => {
-            let path = format!("/b/{}/{}", board.name, parent);
+            let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
             let uri = warp::http::Uri::builder()
                 .path_and_query(path)
                 .build()
