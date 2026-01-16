@@ -6,10 +6,7 @@ CREATE TABLE IF NOT EXISTS files
   file_type TEXT NOT NULL,
   
   board_id BIGINT NOT NULL
-    REFERENCES boards (id) ON DELETE CASCADE,
-     
-  post_id BIGINT NOT NULL
-    REFERENCES posts (id) ON DELETE CASCADE
+    REFERENCES boards (id) ON DELETE CASCADE
 );
 
 ALTER TABLE posts ADD COLUMN

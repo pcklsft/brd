@@ -1,4 +1,4 @@
-use crate::{db, views::thread_page};
+use crate::{db, models::Board, views::thread_page};
 
 use std::{collections::HashMap, convert::Infallible};
 
@@ -28,6 +28,58 @@ pub async fn get(
     Ok(thread_page(&board, thread))
 }
 
+pub async fn process_form(
+    board: &Board,
+    pool: Pool<Postgres>,
+    data: FormData,
+    accepted_text: Vec<String>,
+    accepted_files: Vec<String>,
+) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+    // Begin transaction
+    let mut tx = pool.begin().await?;
+
+    let fields: HashMap<String, String> = data
+        .and_then(|mut field| async move {
+            let mut bytes: Vec<u8> = Vec::new();
+
+            // TODO: CHECK IF THIS IS A FIELD WE'RE ACCEPTING
+            match field.filename() {
+                Some(filename) => {
+                    // Create based on file id
+                    // TODO: REMOVE UNWRAP
+                    let file = tokio::fs::OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(format!(
+                            "assets/user_content/board/{}/{}/{}",
+                            board.name, file_id, filename
+                        ))
+                        .await
+                        .unwrap();
+
+                    Ok((field.name().to_string(), file_id.to_string()))
+                }
+                None => {
+                    // field.data() only returns a piece of the content, so we should call it over and over until it's complete
+                    while let Some(content) = field.data().await {
+                        let content = content.unwrap();
+                        bytes.put(content);
+                    }
+
+                    Ok((
+                        field.name().to_string(),
+                        String::from_utf8_lossy(&*bytes).to_string(),
+                    ))
+                }
+            }
+        })
+        .try_collect()
+        .await?;
+
+    tx.commit().await?;
+    Ok(fields)
+}
+
 // TODO: IF parent, require an image to be attached
 // always expect an image OR a body
 pub async fn create(
@@ -44,9 +96,12 @@ pub async fn create(
     // TODO: inspect this more...
     // Get text fields
     // maybe we should have a model for the specific form
+    let file_id;
     let fields: HashMap<String, Vec<u8>> = data
         .and_then(|mut field| async move {
             let mut bytes: Vec<u8> = Vec::new();
+
+            if field.name() == "file" {}
 
             // field.data() only returns a piece of the content, so we should call it over and over until it's complete
             while let Some(content) = field.data().await {
