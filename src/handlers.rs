@@ -9,7 +9,7 @@ pub mod board;
 pub mod post;
 
 pub async fn index(pool: Pool<Postgres>) -> Result<impl warp::Reply, Infallible> {
-    let boards_partial = match db::boards_get(pool).await {
+    let boards_partial = match db::board::all(pool).await {
         Ok(boards) => boards_partial(boards),
         Err(_) => html! { p { "No boards found" } },
     };

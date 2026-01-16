@@ -11,14 +11,14 @@ pub async fn get(
     thread_id: i64,
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
-    let board = match db::board_get(pool.clone(), &board_name).await {
+    let board = match db::board::get(pool.clone(), &board_name).await {
         Ok(board) => board,
         Err(_) => {
             return Ok(html! { (StatusCode::NOT_FOUND) });
         }
     };
 
-    let thread = match db::thread_get(pool, thread_id).await {
+    let thread = match db::post::thread(pool, thread_id).await {
         Ok(thread) => thread,
         Err(_) => return Ok(html! { (StatusCode::NOT_FOUND )}),
     };
@@ -32,11 +32,11 @@ pub async fn create(
     data: HashMap<String, String>,
     pool: Pool<Postgres>,
 ) -> Result<impl warp::Reply, Infallible> {
-    let Ok(board) = db::board_get(pool.clone(), &board_name).await else {
+    let Ok(board) = db::board::get(pool.clone(), &board_name).await else {
         todo!();
     };
 
-    if let Ok(id) = db::post_create(
+    if let Ok(id) = db::post::create(
         pool,
         &board,
         parent,
