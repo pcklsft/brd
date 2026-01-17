@@ -43,9 +43,6 @@ pub async fn create(
         todo!();
     };
 
-    // TODO: inspect this more...
-    // Get text fields
-    // maybe we should have a model for the specific form
     let fields: HashMap<String, Vec<u8>> = data
         .filter_map(|field| async move {
             if let Ok(ref field) = field
@@ -64,12 +61,9 @@ pub async fn create(
                 if field.name() == "file"
                     && let Some(filename) = field.filename()
                 {
-                    println!("{filename:#?}");
-
                     let path = format!(
-                        "assets/user_content/board/{}/{}",
-                        board_name,
-                        0, // TODO: dont do that
+                        "assets/user_content/board/{board_name}/{}/{filename}",
+                        0, // TODO: get file id
                     );
 
                     let prefix = Path::new(&path).parent().unwrap();
@@ -101,7 +95,6 @@ pub async fn create(
                 } else {
                     let mut bytes: Vec<u8> = Vec::new();
 
-                    // field.data() only returns a piece of the content, so we should call it over and over until it's complete
                     while let Some(content) = field.data().await {
                         let content = content.unwrap();
                         bytes.put(content);
@@ -122,7 +115,7 @@ pub async fn create(
 
     let body = String::from_utf8_lossy(&*body).to_string();
 
-    if let Ok(id) = db::post_create(
+    match db::post_create(
         pool,
         &board,
         parent,
@@ -133,14 +126,14 @@ pub async fn create(
     )
     .await
     {
-        let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
-        let uri = warp::http::Uri::builder()
-            .path_and_query(path)
-            .build()
-            .unwrap();
-        Ok(warp::redirect(uri))
-    } else {
-        // Post not successfully created
-        todo!()
+        Ok(id) => {
+            let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
+            let uri = warp::http::Uri::builder()
+                .path_and_query(path)
+                .build()
+                .unwrap();
+            Ok(warp::redirect(uri))
+        }
+        Err(e) => panic!("{e:#?}"),
     }
 }

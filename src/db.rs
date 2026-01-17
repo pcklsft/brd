@@ -65,7 +65,7 @@ pub async fn post_create(
             INSERT INTO posts (body, parent, board_id)
             VALUES ($1, $2, $3)
             RETURNING id;
-            "#,
+        "#,
         body,
         parent,
         board.id
@@ -77,19 +77,30 @@ pub async fn post_create(
     // Create and attach the file
     if let Some(file_name) = file_name {
         let file_id = sqlx::query!(
-            r#"INSERT INTO files (file_name, file_type, board_id) VALUES ($1, $2, $3) RETURNING id"#,
+            r#"
+                INSERT INTO files (file_name, file_type, board_id)
+                VALUES ($1, $2, $3)
+                RETURNING id;
+            "#,
             file_name,
             "", // TODO: fix
             board.id,
-        ).fetch_one(&pool).await?.id;
+        )
+        .fetch_one(&pool)
+        .await?
+        .id;
 
         // Apply file id to created post
         sqlx::query!(
-            r#"UPDATE posts SET file_id = $1 WHERE id = $2"#,
+            r#"
+                UPDATE posts
+                SET file_id = $1
+                WHERE id = $2;
+            "#,
             file_id,
             post_id
         )
-        .fetch_one(&pool)
+        .execute(&pool)
         .await?;
     }
 
