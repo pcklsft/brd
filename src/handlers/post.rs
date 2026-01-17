@@ -67,10 +67,9 @@ pub async fn create(
                     println!("{filename:#?}");
 
                     let path = format!(
-                        "assets/user_content/board/{}/{}/{}",
+                        "assets/user_content/board/{}/{}",
                         board_name,
                         0, // TODO: dont do that
-                        filename
                     );
 
                     let prefix = Path::new(&path).parent().unwrap();
