@@ -1,11 +1,15 @@
 use crate::{db, models::Board, views::thread_page};
 
-use std::{collections::HashMap, convert::Infallible};
+use std::{collections::HashMap, convert::Infallible, path::Path};
 
-use bytes::BufMut;
-use futures_util::TryStreamExt;
+use bytes::{Buf, BufMut};
+use futures_util::{StreamExt, TryStreamExt};
 use maud::html;
 use sqlx::{Pool, Postgres};
+use tokio::{
+    fs::{self, File},
+    io::{AsyncWriteExt, BufWriter},
+};
 use warp::{filters::multipart::FormData, http::StatusCode};
 
 pub async fn get(
@@ -28,60 +32,6 @@ pub async fn get(
     Ok(thread_page(&board, thread))
 }
 
-pub async fn process_form(
-    board: &Board,
-    pool: Pool<Postgres>,
-    data: FormData,
-    accepted_text: Vec<String>,
-    accepted_files: Vec<String>,
-) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-    // Begin transaction
-    let mut tx = pool.begin().await?;
-
-    let fields: HashMap<String, String> = data
-        .and_then(|mut field| async move {
-            let mut bytes: Vec<u8> = Vec::new();
-
-            // TODO: CHECK IF THIS IS A FIELD WE'RE ACCEPTING
-            match field.filename() {
-                Some(filename) => {
-                    // Create based on file id
-                    // TODO: REMOVE UNWRAP
-                    let file = tokio::fs::OpenOptions::new()
-                        .write(true)
-                        .create(true)
-                        .open(format!(
-                            "assets/user_content/board/{}/{}/{}",
-                            board.name, file_id, filename
-                        ))
-                        .await
-                        .unwrap();
-
-                    Ok((field.name().to_string(), file_id.to_string()))
-                }
-                None => {
-                    // field.data() only returns a piece of the content, so we should call it over and over until it's complete
-                    while let Some(content) = field.data().await {
-                        let content = content.unwrap();
-                        bytes.put(content);
-                    }
-
-                    Ok((
-                        field.name().to_string(),
-                        String::from_utf8_lossy(&*bytes).to_string(),
-                    ))
-                }
-            }
-        })
-        .try_collect()
-        .await?;
-
-    tx.commit().await?;
-    Ok(fields)
-}
-
-// TODO: IF parent, require an image to be attached
-// always expect an image OR a body
 pub async fn create(
     board_name: String,
     parent: Option<i64>,
@@ -96,29 +46,75 @@ pub async fn create(
     // TODO: inspect this more...
     // Get text fields
     // maybe we should have a model for the specific form
-    let file_id;
     let fields: HashMap<String, Vec<u8>> = data
-        .and_then(|mut field| async move {
-            let mut bytes: Vec<u8> = Vec::new();
-
-            if field.name() == "file" {}
-
-            // field.data() only returns a piece of the content, so we should call it over and over until it's complete
-            while let Some(content) = field.data().await {
-                let content = content.unwrap();
-                bytes.put(content);
+        .filter_map(|field| async move {
+            if let Ok(ref field) = field
+                && let Some(filename) = field.filename()
+                && filename.is_empty()
+            {
+                None
+            } else {
+                Some(field)
             }
+        })
+        .and_then(|mut field| {
+            let board_name = board.name.clone();
 
-            Ok((field.name().to_string(), bytes))
+            async move {
+                if field.name() == "file"
+                    && let Some(filename) = field.filename()
+                {
+                    println!("{filename:#?}");
+
+                    let path = format!(
+                        "assets/user_content/board/{}/{}/{}",
+                        board_name,
+                        0, // TODO: dont do that
+                        filename
+                    );
+
+                    let prefix = Path::new(&path).parent().unwrap();
+                    fs::create_dir_all(prefix).await.unwrap();
+
+                    let file = fs::OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(path.clone())
+                        .await;
+
+                    let file = match file {
+                        Ok(file) => file,
+                        Err(e) => panic!("{e:#?}"),
+                    };
+
+                    let mut writer = BufWriter::new(file);
+
+                    while let Some(content) = field.data().await {
+                        let content = content.unwrap();
+                        writer.write_all(content.chunk()).await.unwrap();
+                    }
+
+                    let Ok(()) = writer.flush().await else {
+                        todo!();
+                    };
+
+                    Ok((field.name().to_string(), path.into()))
+                } else {
+                    let mut bytes: Vec<u8> = Vec::new();
+
+                    // field.data() only returns a piece of the content, so we should call it over and over until it's complete
+                    while let Some(content) = field.data().await {
+                        let content = content.unwrap();
+                        bytes.put(content);
+                    }
+
+                    Ok((field.name().to_string(), bytes))
+                }
+            }
         })
         .try_collect()
         .await
         .unwrap();
-
-    let Some(file) = fields.get("file") else {
-        // Couldn't get file
-        todo!();
-    };
 
     let Some(body) = fields.get("body") else {
         // Couldn't get body
@@ -127,7 +123,17 @@ pub async fn create(
 
     let body = String::from_utf8_lossy(&*body).to_string();
 
-    if let Ok(id) = db::post_create(pool, &board, parent, body, file).await {
+    if let Ok(id) = db::post_create(
+        pool,
+        &board,
+        parent,
+        body,
+        fields
+            .get("file")
+            .map(|bytes| String::from_utf8_lossy(&*bytes).to_string()),
+    )
+    .await
+    {
         let path = format!("/b/{}/{}", board.name, parent.unwrap_or(id));
         let uri = warp::http::Uri::builder()
             .path_and_query(path)

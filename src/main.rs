@@ -18,7 +18,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     query_file!("queries/seed_data.sql").execute(&pool).await?;
 
     let api = filters::api(pool);
-
     warp::serve(api).run(([127, 0, 0, 1], 8000)).await;
 
     Ok(())

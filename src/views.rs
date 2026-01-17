@@ -93,7 +93,6 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         (post_form())
         br;
 
-        // TODO: stop repetition
         @for post in &posts[..] {
             pre id=(post.id) {
                 "id: " (post.id) "\n"

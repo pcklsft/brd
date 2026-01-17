@@ -56,16 +56,9 @@ pub async fn post_create(
     board: &Board,
     parent: Option<i64>,
     body: String,
-    file: Option<Vec<u8>>,
     file_name: Option<String>,
-    file_type: Option<String>,
 ) -> Result<i64, Box<dyn std::error::Error>> {
-    // If no body AND no file, then return an error
-    if body == "" && (file.is_none() || file_name.is_none() || file_type.is_none()) {
-        return Err("".into());
-    }
-
-    let mut tx = pool.begin().await?;
+    let tx = pool.begin().await?;
 
     let post_id = sqlx::query!(
         r#"
@@ -82,16 +75,12 @@ pub async fn post_create(
     .id;
 
     // Create and attach the file
-    if let Some(file) = file
-        && let Some(file_name) = file_name
-        && let Some(file_type) = file_type
-    {
+    if let Some(file_name) = file_name {
         let file_id = sqlx::query!(
-            r#"INSERT INTO files (file_name, file_type, board_id, post_id) VALUES ($1, $2, $3, $4) RETURNING id"#,
+            r#"INSERT INTO files (file_name, file_type, board_id) VALUES ($1, $2, $3) RETURNING id"#,
             file_name,
-            file_type,
+            "", // TODO: fix
             board.id,
-            post_id
         ).fetch_one(&pool).await?.id;
 
         // Apply file id to created post
@@ -102,20 +91,10 @@ pub async fn post_create(
         )
         .fetch_one(&pool)
         .await?;
-
-        // TODO: stream instead
-        tokio::fs::write(
-            format!(
-                "assets/user_content/{}/{}/{}",
-                board.name, post_id, file_name
-            ),
-            file,
-        )
-        .await?;
     }
 
     // If the function returns early at any point, then rollback the changes
-    tx.commit().await;
+    tx.commit().await.unwrap();
 
     Ok(post_id)
 }

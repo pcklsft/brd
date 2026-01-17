@@ -17,7 +17,7 @@ pub fn create(
 ) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::path!("b" / String)
         .and(warp::post())
-        .and(warp::multipart::form().max_length(1024 * 4))
+        .and(warp::multipart::form().max_length(1024 * 1024 * 25))
         .and(db::with_pool(pool))
         .and_then(
             |name, data, pool| async move { handlers::post::create(name, None, data, pool).await },
