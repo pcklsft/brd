@@ -44,13 +44,23 @@ pub fn index_page(boards: Markup) -> Markup {
     }
 }
 
+pub fn post_partial(board: &Board, post: &Post, link: bool) -> Markup {
+    html! {
+        pre {
+            @if link {
+                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
+            } @else {
+                "id: " (post.id) "\n"
+            }
+            "body: " (post.body) "\n"
+        }
+    }
+}
+
 pub fn threads_partial(board: &Board, posts: Vec<Post>) -> Markup {
     html! {
         @for post in (posts.iter().rev()) {
-            pre {
-                a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
-                "body: " (post.body) "\n"
-            }
+            (post_partial(board, post, true))
         }
     }
 }
@@ -94,10 +104,7 @@ pub fn thread_page(board: &Board, posts: Vec<Post>) -> Markup {
         br;
 
         @for post in &posts[..] {
-            pre id=(post.id) {
-                "id: " (post.id) "\n"
-                "body: " (post.body) "\n"
-            }
+            (post_partial(board, post, false))
         }
     }
 }
