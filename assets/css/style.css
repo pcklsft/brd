@@ -2,10 +2,40 @@
     font-family: monospace;
 }
 
+.post {
+    display: block;
+    clear: both;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow: auto;
+
+    width: fit-content;
+    overflow-wrap: break-word;
+    
+    background-color: #EEF;
+    border-right: solid 1px #DDE;
+    border-bottom: solid 1px #DDE;
+}
+
+.post-info {
+    margin: 0.5rem;
+    
+    border-top: solid 1px #AAD;
+    border-bottom: solid 1px #AAD;
+}
+
+.post-info * {
+    margin: 0;
+}
+
 .post img {
     float: left;
     max-width: 320px;
     max-height: 240px;
-    border: solid 1px grey;
-    margin-right: 1.5rem;
+}
+
+.post-body p {
+    display: inline;
+    margin-right: 1rem;
+    margin-left: 1rem;
 }
