@@ -58,54 +58,20 @@ pub async fn post_create(
     body: String,
     file_name: Option<String>,
 ) -> Result<i64, Box<dyn std::error::Error>> {
-    let tx = pool.begin().await?;
-
     let post_id = sqlx::query!(
         r#"
-            INSERT INTO posts (body, parent, board_id)
-            VALUES ($1, $2, $3)
+            INSERT INTO posts (body, parent, board_id, file_name)
+            VALUES ($1, $2, $3, $4)
             RETURNING id;
         "#,
         body,
         parent,
-        board.id
+        board.id,
+        file_name,
     )
     .fetch_one(&pool)
     .await?
     .id;
-
-    // Create and attach the file
-    if let Some(file_name) = file_name {
-        let file_id = sqlx::query!(
-            r#"
-                INSERT INTO files (file_name, file_type, board_id)
-                VALUES ($1, $2, $3)
-                RETURNING id;
-            "#,
-            file_name,
-            "", // TODO: fix
-            board.id,
-        )
-        .fetch_one(&pool)
-        .await?
-        .id;
-
-        // Apply file id to created post
-        sqlx::query!(
-            r#"
-                UPDATE posts
-                SET file_id = $1
-                WHERE id = $2;
-            "#,
-            file_id,
-            post_id
-        )
-        .execute(&pool)
-        .await?;
-    }
-
-    // If the function returns early at any point, then rollback the changes
-    tx.commit().await.unwrap();
 
     Ok(post_id)
 }

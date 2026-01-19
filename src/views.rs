@@ -46,11 +46,15 @@ pub fn index_page(boards: Markup) -> Markup {
 
 pub fn post_partial(board: &Board, post: &Post, link: bool) -> Markup {
     html! {
-        pre {
+        pre class="post" {
             @if link {
                 a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
             } @else {
                 "id: " (post.id) "\n"
+            }
+
+            @if let Some(file_name) = &post.file_name {
+                img src={ "/" (file_name) };
             }
             "body: " (post.body) "\n"
         }
