@@ -32,6 +32,7 @@ pub async fn get(
     Ok(thread_page(&board, thread))
 }
 
+//TODO: fix weird vulnerable path bullshit
 pub async fn create(
     board_name: String,
     parent: Option<i64>,
@@ -120,6 +121,13 @@ pub async fn create(
         &board,
         parent,
         body,
+        fields.get("file").map(|bytes| {
+            // STOOOOOOOP
+            Path::file_name(Path::new(&String::from_utf8_lossy(&*bytes).to_string()))
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
+        }),
         fields
             .get("file")
             .map(|bytes| String::from_utf8_lossy(&*bytes).to_string()),

@@ -57,17 +57,19 @@ pub async fn post_create(
     parent: Option<i64>,
     body: String,
     file_name: Option<String>,
+    file_path: Option<String>,
 ) -> Result<i64, Box<dyn std::error::Error>> {
     let post_id = sqlx::query!(
         r#"
-            INSERT INTO posts (body, parent, board_id, file_name)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO posts (body, parent, board_id, file_name, file_path)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING id;
         "#,
         body,
         parent,
         board.id,
         file_name,
+        file_path
     )
     .fetch_one(&pool)
     .await?

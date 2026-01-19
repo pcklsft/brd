@@ -16,4 +16,5 @@ pub struct Post {
 
     pub file_name: Option<String>,
     pub file_type: Option<String>,
+    pub file_path: Option<String>,
 }

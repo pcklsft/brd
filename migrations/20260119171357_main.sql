@@ -16,5 +16,6 @@ CREATE TABLE IF NOT EXISTS posts
         REFERENCES boards (id) ON DELETE CASCADE,
 
     file_name TEXT,
+    file_path TEXT,
     file_type TEXT
 );

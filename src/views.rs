@@ -53,11 +53,18 @@ pub fn post_partial(board: &Board, post: &Post, link: bool) -> Markup {
                 } @else {
                     p { "id: " (post.id) "\n" }
                 }
+
+                @if let Some(file_name) = &post.file_name && let Some(file_path) = &post.file_path {
+                    span {
+                        "File: "
+                        a href={"/" (file_path)} { (file_name) }
+                    }
+                }
             }
 
             div class="post-body" {
-                @if let Some(file_name) = &post.file_name {
-                    img src={ "/" (file_name) };
+                @if let Some(file_path) = &post.file_path {
+                    img src={ "/" (file_path) };
                 }
 
                 p {
