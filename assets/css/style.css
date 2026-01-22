@@ -10,6 +10,8 @@
     overflow: auto;
 
     width: fit-content;
+    min-width: min(100%, 80ch);
+    
     overflow-wrap: break-word;
     
     background-color: #EEF;

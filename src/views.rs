@@ -48,15 +48,17 @@ pub fn post_partial(board: &Board, post: &Post, link: bool) -> Markup {
     html! {
         div class="post" {
             div class="post-info" {
+                span { "#" (post.id) "\n" }
+
                 @if link {
-                    a href={ "/b/" (board.name)  "/" (post.id) } { "id: " (post.id) "\n" }
-                } @else {
-                    p { "id: " (post.id) "\n" }
+                    a href={ "/b/" (board.name)  "/" (post.id) } { "[reply]" }
                 }
+
+                br;
 
                 @if let Some(file_name) = &post.file_name && let Some(file_path) = &post.file_path {
                     span {
-                        "File: "
+                        "file: "
                         a href={"/" (file_path)} { (file_name) }
                     }
                 }
